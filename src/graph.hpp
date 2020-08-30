@@ -10,6 +10,7 @@
 #include "cell.hpp"
 #include "parser.hpp"
 #include "types.hpp"
+#include "thread"
 
 
 class CellGraph {
@@ -19,8 +20,10 @@ public:
         std::vector<Cell *> childNodes;
         auto & currentNode = nodes[input.name]; // create or get node from map
         currentNode.writeLock();
+        currentNode.name.clear();
+        currentNode.name.append(input.name);
         for (auto & name: input.refs) {
-            auto & childNode = nodes[name];
+            auto & childNode = nodes[name]; // create or get child node
             childNode.writeLock();              // lock all participating cells
             childNodes.push_back(&childNode);
         }
@@ -48,6 +51,7 @@ public:
         initialBuildingMutex.lock();
         CalcVersion version = 1; //CalcVersionHolder::incVersion();
         isInitialBuilding = false;
+
         for (auto & it : nodes) {
             Cell & c = it.second;
             c.readLock();

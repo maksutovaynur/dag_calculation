@@ -28,7 +28,7 @@ public:
     }
     void setRefs(std::vector<Cell*> &vector){
         rmRefs();
-        for (Cell *node : refs) {
+        for (Cell *node : vector) {
             node->addOuterRef(this);
             refs.push_back(node);
         }
@@ -53,19 +53,21 @@ public:
     }
     bool calculate(CalcVersion cVersion) {
         if (version >= cVersion) return false;
-        version = cVersion;
-        ResType tmp = 0;
-        for (Cell* node: refs) {
-            switch (node->getState()) {
-                case DONE:
-                    tmp += node->result;
-                    break;
-                case NO_VALUE:
-                    state = NO_VALUE;
-                    return true;
+        if (type == FORMULA) {
+            ResType tmp = 0;
+            for (Cell *node: refs) {
+                switch (node->getState()) {
+                    case DONE:
+                        tmp += node->result;
+                        break;
+                    case NO_VALUE:
+                        state = NO_VALUE;
+                        return true;
+                }
             }
-        }
-        result = tmp;
+            result = tmp;
+        } else result = arg;
+        version = cVersion;
         state = DONE;
         return true;
     }
@@ -102,6 +104,7 @@ public:
         type = VALUE;
         rmRefs();
     }
+    std::string name;
 private:
     CellState state;
     CellType type;

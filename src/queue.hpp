@@ -8,6 +8,7 @@
 
 #include "queue"
 #include "mutex"
+#include "optional"
 
 
 template <typename T>
@@ -18,18 +19,18 @@ public:
         queue.push(element);
         mutex.unlock();
     }
-    T pop() {
+    std::optional<T> pop() {
         mutex.lock();
         T v;
-        try {
-            v = queue.back();
+        bool hasValue = false;
+        if (! queue.empty()) {
+            v = queue.front();
             queue.pop();
-        } catch ( std::exception ) {
-            mutex.unlock();
-            throw "Queue empty";
-        }
+            hasValue = true;
+        };
         mutex.unlock();
-        return v;
+        if (hasValue) return std::optional<T>(v);
+        else return std::nullopt;
     }
 
 private:

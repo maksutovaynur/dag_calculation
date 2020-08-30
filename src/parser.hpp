@@ -8,6 +8,7 @@
 #include "string"
 #include "vector"
 #include "types.hpp"
+#include "optional"
 
 
 struct ParsedCellInput {
@@ -19,6 +20,11 @@ struct ParsedCellInput {
 
 void appendToString(std::string & str, char *c, int start, int end) {
     for (int j = start; j <= end; j ++) str.push_back(c[j]);
+}
+
+std::optional<ArgType> stoa(std::string & str) {
+    try { return std::optional<ArgType>(std::stoll(str)); }
+    catch (std::exception) { return std::nullopt; }
 }
 
 ParsedCellInput parse(char *c) {
@@ -36,11 +42,15 @@ ParsedCellInput parse(char *c) {
             if (cc == '\0') break;
         }
     }
+    input.type = FORMULA;
     if (input.refs.size() == 1) {
-        input.arg = std::stoll(input.refs.back());
-        input.refs.pop_back();
-        input.type = VALUE;
-    } else input.type = FORMULA;
+        auto res = stoa(input.refs.back());
+        if (res.has_value()) {
+            input.arg = res.value();
+            input.refs.pop_back();
+            input.type = VALUE;
+        }
+    }
     return std::move(input);
 }
 

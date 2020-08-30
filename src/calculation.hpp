@@ -13,16 +13,16 @@
 void calculationCycle(CellQueue *queue) {
     QueueTask task;
     while (true) {
-        try {
-            task = queue->pop();
-        } catch ( std::exception ) {
-            break;
-        }
+        auto taskOpt = queue->pop();
+        if (!taskOpt.has_value()) break;
+        task = taskOpt.value();
         task.cell->writeLock();
         task.cell->calculate(task.version);
+        for (auto &it : *task.cell) {
+            queue->push(QueueTask{ it, task.version });
+        }
         task.cell->writeUnlock();
     }
-
 }
 
 
@@ -37,6 +37,9 @@ public:
         for (auto &t : threads) {
             t.join();
         }
+    }
+    int getThreadCount() {
+        return threads.size();
     }
 private:
     std::vector<std::thread> threads;
