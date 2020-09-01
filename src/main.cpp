@@ -3,47 +3,54 @@
 #include "string"
 #include "graph.hpp"
 #include "calculation.hpp"
-#include <ctime>
+#include "mtime.h"
 
 
 
-void test1(std::string & filename) {
+void test1(std::string & inFileName, std::string & outFileName, int threadCount) {
     auto graph = CellGraph();
     std::string input;
-    std::ifstream file(filename);
-    while (std::getline(file, input)) {
+    std::ifstream inFile(inFileName);
+    while (std::getline(inFile, input)) {
         graph.addCell((char*)input.c_str());
     }
     graph.stopInitialBuilding();
-    auto start = std::time(nullptr);
-    auto pool = CellThreadPool(graph.getQueue(), 1);
+    std::cout << "Graph size: " << graph.size() << std::endl;
+    ptime pstart = now();
+    auto pool = CellThreadPool(graph.getQueue(), threadCount);
     pool.join();
-    auto end = std::time(nullptr);
-    std::cout << pool.getThreadCount() << " threads: " << end - start << " s" << std::endl;
+    ptime pend = now();
+    std::cout << pool.getThreadCount() << " threads: " << ((float)durationCast(pend - pstart))/1000000 << " s" << std::endl;
+    std::ofstream outFile(outFileName);
     for (auto &it : graph) {
         if (it.second.getState() == DONE) {
-            std::cout << it.first << " = " << it.second.getResult() << std::endl;
+            outFile << it.first << " = " << it.second.getResult() << std::endl;
         }
         else {
-            std::cout << it.first << " = UNDEFINED" << std::endl;
+            outFile << it.first << " = UNDEFINED" << std::endl;
         }
     }
 }
 
 
 int main(int argc, char* argv[]) {
-    std::string name;
+    std::string inFileName, outFileName;
     int threadCount;
     if (argc <= 1) {
-        std::cin >> name;
+        std::cin >> inFileName;
     } else {
-        name.append(argv[1]);
+        inFileName.append(argv[1]);
     }
     if (argc <= 2) {
+        std::cin >> outFileName;
+    } else {
+        outFileName.append(argv[2]);
+    }
+    if (argc <= 3) {
         std::cin >> threadCount;
     } else {
-        threadCount = std::stoi(argv[2]);
+        threadCount = std::stoi(argv[3]);
     }
-    test1(name);
+    test1(inFileName, outFileName, threadCount);
     return 0;
 }

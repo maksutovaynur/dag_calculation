@@ -7,12 +7,16 @@
 #include "shared_mutex"
 #include "types.hpp"
 #include "queue.hpp"
+#include "unistd.h"
 
 
 class Cell {
 public:
     CalcVersion getVersion() {
-        return version;
+        this->versionMutex.lock_shared();
+        auto v = version;
+        this->versionMutex.unlock_shared();
+        return v;
     }
     CellType getType() {
         return type;
@@ -32,7 +36,11 @@ public:
             node->addOuterRef(this);
             refs.push_back(node);
         }
-        if (vector.size() > 0) type = FORMULA;
+//        std::cout << "Refs count: " << refs.size() << std::endl;
+        if (!refs.empty())
+            type = FORMULA;
+        else
+            type = VALUE;
     }
     void rmRefs(){
         for (auto & r : refs) {
@@ -53,6 +61,7 @@ public:
     }
     bool calculate(CalcVersion cVersion) {
         if (version >= cVersion) return false;
+//        std::cout << "Cell type = " << type << std::endl;
         if (type == FORMULA) {
             ResType tmp = 0;
             for (Cell *node: refs) {
@@ -66,11 +75,13 @@ public:
                 }
             }
             result = tmp;
+            usleep(1000);
         } else result = arg;
         version = cVersion;
         state = DONE;
         return true;
     }
+
     std::unordered_set<Cell*>::iterator begin() noexcept {
         return outerRefs.begin();
     }
@@ -89,7 +100,6 @@ public:
     void writeUnlock() {
         this->mutex.unlock();
     }
-
     Cell(){
         state = NO_VALUE;
         version = 0;
@@ -104,11 +114,11 @@ public:
         type = VALUE;
         rmRefs();
     }
-    std::string name;
 private:
     CellState state;
     CellType type;
     CalcVersion version;
+    std::shared_mutex versionMutex;
     std::shared_mutex mutex;
     ArgType arg;
     ResType result;

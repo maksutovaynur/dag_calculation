@@ -14,8 +14,8 @@
 struct ParsedCellInput {
     std::string name;
     std::vector<std::string> refs;
-    ArgType arg;
-    CellType type;
+    ArgType arg = 0;
+    CellType type = VALUE;
 };
 
 void appendToString(std::string & str, char *c, int start, int end) {
@@ -23,8 +23,14 @@ void appendToString(std::string & str, char *c, int start, int end) {
 }
 
 std::optional<ArgType> stoa(std::string & str) {
-    try { return std::optional<ArgType>(std::stoll(str)); }
-    catch (std::exception) { return std::nullopt; }
+    try {
+//        std::cout << "stoa " << str << std::endl;
+        return std::optional<ArgType>(std::stoll(str));
+    }
+    catch (std::exception &e) {
+//        std::cout << "not ok stoa " << str << std::endl;
+        return std::nullopt;
+    }
 }
 
 ParsedCellInput parse(char *c) {
@@ -37,18 +43,20 @@ ParsedCellInput parse(char *c) {
             lastPosition = i + 2;
         }
         else if (cc == '+' || cc == '\0') {
-            input.refs.push_back(std::string(&c[lastPosition], i - lastPosition));
+            input.refs.emplace_back(std::string(&c[lastPosition], i - lastPosition));
             lastPosition = i + 1;
             if (cc == '\0') break;
         }
     }
     input.type = FORMULA;
+//    std::cout << "Input refs size " << input.refs.size() << std::endl;
     if (input.refs.size() == 1) {
         auto res = stoa(input.refs.back());
         if (res.has_value()) {
             input.arg = res.value();
             input.refs.pop_back();
             input.type = VALUE;
+//            std::cout << "Type value: " << res.value() << std::endl;
         }
     }
     return std::move(input);

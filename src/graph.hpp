@@ -20,15 +20,15 @@ public:
         std::vector<Cell *> childNodes;
         auto & currentNode = nodes[input.name]; // create or get node from map
         currentNode.writeLock();
-        currentNode.name.clear();
-        currentNode.name.append(input.name);
         for (auto & name: input.refs) {
             auto & childNode = nodes[name]; // create or get child node
             childNode.writeLock();              // lock all participating cells
             childNodes.push_back(&childNode);
         }
         currentNode.setRefs(childNodes);     // create refs between cells
-        if (input.type == VALUE) currentNode.setArgument(input.arg);
+        if (input.type == VALUE) {
+            currentNode.setArgument(input.arg);
+        }
 
         for (auto & childNode: childNodes) {
             childNode->writeUnlock();
@@ -61,6 +61,9 @@ public:
             c.readUnlock();
         }
         initialBuildingMutex.unlock();
+    }
+    int size() {
+        return nodes.size();
     }
     bool isInInitialBuilding () {
         initialBuildingMutex.lock_shared();

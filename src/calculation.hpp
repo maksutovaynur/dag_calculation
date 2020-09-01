@@ -11,17 +11,17 @@
 
 
 void calculationCycle(CellQueue *queue) {
-    QueueTask task;
     while (true) {
         auto taskOpt = queue->pop();
         if (!taskOpt.has_value()) break;
-        task = taskOpt.value();
-        task.cell->writeLock();
-        task.cell->calculate(task.version);
-        for (auto &it : *task.cell) {
-            queue->push(QueueTask{ it, task.version });
-        }
-        task.cell->writeUnlock();
+        QueueTask & task = taskOpt.value();
+        auto & cell = task.cell;
+        CalcVersion version = task.version;
+        if (cell->getVersion() >= version) continue;
+        cell->writeLock();
+        cell->calculate(version);
+        for (auto &it : *cell) queue->push(QueueTask{ it, version });
+        cell->writeUnlock();
     }
 }
 

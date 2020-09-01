@@ -7,7 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_executable(dag_calculation
         src/main.cpp
-        src/types.hpp/
+        src/types.hpp
+        src/mtime.h
         src/calculation.hpp
         src/graph.hpp
         src/cell.hpp
