@@ -7,10 +7,8 @@ add_executable(dag_calculation
         src/main.cpp
         src/types.hpp
         src/mtime.h
-        src/calculation.hpp
-        src/graph.hpp
-        src/cell.hpp
         src/parser.hpp
         src/queue.hpp
-        )
+        src/graph.hpp)
+
 target_link_libraries(dag_calculation pthread)

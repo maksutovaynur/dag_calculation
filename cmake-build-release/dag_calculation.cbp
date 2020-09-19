@@ -82,28 +82,22 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/home/aynur/Repos/dag_calculation/src/ver1/calculation.hpp">
+		<Unit filename="/home/aynur/Repos/dag_calculation/src/graph.hpp">
 			<Option target="dag_calculation"/>
 		</Unit>
-		<Unit filename="/home/aynur/Repos/dag_calculation/src/ver1/cell.hpp">
+		<Unit filename="/home/aynur/Repos/dag_calculation/src/main.cpp">
 			<Option target="dag_calculation"/>
 		</Unit>
-		<Unit filename="/home/aynur/Repos/dag_calculation/src/ver1/graph.hpp">
+		<Unit filename="/home/aynur/Repos/dag_calculation/src/mtime.h">
 			<Option target="dag_calculation"/>
 		</Unit>
-		<Unit filename="/home/aynur/Repos/dag_calculation/src/ver1/main.cpp">
+		<Unit filename="/home/aynur/Repos/dag_calculation/src/parser.hpp">
 			<Option target="dag_calculation"/>
 		</Unit>
-		<Unit filename="/home/aynur/Repos/dag_calculation/src/ver1/mtime.h">
+		<Unit filename="/home/aynur/Repos/dag_calculation/src/queue.hpp">
 			<Option target="dag_calculation"/>
 		</Unit>
-		<Unit filename="/home/aynur/Repos/dag_calculation/src/ver1/parser.hpp">
-			<Option target="dag_calculation"/>
-		</Unit>
-		<Unit filename="/home/aynur/Repos/dag_calculation/src/ver1/queue.hpp">
-			<Option target="dag_calculation"/>
-		</Unit>
-		<Unit filename="/home/aynur/Repos/dag_calculation/src/ver1/types.hpp">
+		<Unit filename="/home/aynur/Repos/dag_calculation/src/types.hpp">
 			<Option target="dag_calculation"/>
 		</Unit>
 		<Unit filename="/home/aynur/Repos/dag_calculation/CMakeLists.txt">

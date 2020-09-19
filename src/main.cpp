@@ -1,55 +1,68 @@
 #include "fstream"
 #include "iostream"
 #include "string"
+#include "parser.hpp"
 #include "graph.hpp"
-#include "calculation.hpp"
 #include "mtime.h"
 
 
+using namespace std;
 
-void test1(std::string & inFileName, std::string & outFileName, int threadCount) {
-    auto graph = CellGraph();
-    std::string input;
-    std::ifstream inFile(inFileName);
-    while (std::getline(inFile, input)) {
-        graph.addCell((char*)input.c_str());
+
+void test1(string & inFileName, string & outFileName, int threadCount) {
+    string input;
+    ifstream inFile(inFileName);
+
+    CGraph graph;
+
+    while (getline(inFile, input)) {
+        auto parsed = parse((char *)input.c_str());
+        graph.addNode(parsed.name, parsed.operands, parsed.arg);
     }
-    graph.stopInitialBuilding();
-    std::cout << "Graph size: " << graph.size() << std::endl;
+    cout << "Built graph, size = " << graph.size() << endl;
+
+    graph.preprocessOneThreaded();
+
+    cout << "Topological sort performed" << endl;
+
     ptime pstart = now();
-    auto pool = CellThreadPool(graph.getQueue(), threadCount);
-    pool.join();
+
+    graph.calculateOneThreaded();
+
     ptime pend = now();
-    std::cout << pool.getThreadCount() << " threads: " << ((float)durationCast(pend - pstart))/1000000 << " s" << std::endl;
-    std::ofstream outFile(outFileName);
-    for (auto &it : graph) {
-        if (it.second.getState() == DONE) {
-            outFile << it.first << " = " << it.second.getResult() << std::endl;
-        }
-        else {
-            outFile << it.first << " = UNDEFINED" << std::endl;
-        }
+
+    cout
+        << "Calculation time using "
+        << threadCount
+        << " threads: "
+        << ((float)durationCast(pend - pstart))/1000000
+        << " s"
+        << endl;
+    ofstream outFile(outFileName);
+
+    for (auto & c : graph ) {
+        outFile << c.first << " = " << c.second.arg << endl;
     }
 }
 
 
 int main(int argc, char* argv[]) {
-    std::string inFileName, outFileName;
+    string inFileName, outFileName;
     int threadCount;
     if (argc <= 1) {
-        std::cin >> inFileName;
+        cin >> inFileName;
     } else {
         inFileName.append(argv[1]);
     }
     if (argc <= 2) {
-        std::cin >> outFileName;
+        cin >> outFileName;
     } else {
         outFileName.append(argv[2]);
     }
     if (argc <= 3) {
-        std::cin >> threadCount;
+        cin >> threadCount;
     } else {
-        threadCount = std::stoi(argv[3]);
+        threadCount = stoi(argv[3]);
     }
     test1(inFileName, outFileName, threadCount);
     return 0;

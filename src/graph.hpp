@@ -1,91 +1,113 @@
-//
-// Created by aynur on 22.08.2020.
-//
+#ifndef DAG_CALCULATION_GRAPH_H
+#define DAG_CALCULATION_GRAPH_H
 
-#ifndef DAG_CALCULATION_CGRAPH_H
-#define DAG_CALCULATION_CGRAPH_H
-
-#include "unordered_map"
-#include "unordered_set"
-#include "cell.hpp"
-#include "parser.hpp"
 #include "types.hpp"
-#include "thread"
+#include "map"
+#include "set"
+#include "string"
+#include "vector"
+#include "parser.hpp"
 
 
-class CellGraph {
-public:
-    void addCell(char *c){
-        ParsedCellInput input = parse(c); // parse input string
-        std::vector<Cell *> childNodes;
-        auto & currentNode = nodes[input.name]; // create or get node from map
-        currentNode.writeLock();
-        for (auto & name: input.refs) {
-            auto & childNode = nodes[name]; // create or get child node
-            childNode.writeLock();              // lock all participating cells
-            childNodes.push_back(&childNode);
-        }
-        currentNode.setRefs(childNodes);     // create refs between cells
-        if (input.type == VALUE) {
-            currentNode.setArgument(input.arg);
-        }
+using namespace std;
 
-        for (auto & childNode: childNodes) {
-            childNode->writeUnlock();
-        }
 
-        currentNode.writeUnlock();
-
-        if (! isInInitialBuilding()) {
-            // On initial buildind, most efficient way is to select terminal nodes
-            // after whole process of building;
-            // when editing already existing graph,
-            // ineffective recalculation on each node should be used
-            queue.push(QueueTask{&currentNode, 1}); //CalcVersionHolder::incVersion()
-        }
-    }
-    CellGraph () {
-        isInitialBuilding = true;
-    }
-    void stopInitialBuilding () {
-        initialBuildingMutex.lock();
-        CalcVersion version = 1; //CalcVersionHolder::incVersion();
-        isInitialBuilding = false;
-
-        for (auto & it : nodes) {
-            Cell & c = it.second;
-            c.readLock();
-            if (c.getType() == VALUE) {
-                queue.push(QueueTask { &c, version });
-            }
-            c.readUnlock();
-        }
-        initialBuildingMutex.unlock();
-    }
-    int size() {
-        return nodes.size();
-    }
-    bool isInInitialBuilding () {
-        initialBuildingMutex.lock_shared();
-        bool v = isInitialBuilding;
-        initialBuildingMutex.unlock_shared();
-        return v;
-    }
-    CellQueue *getQueue() {
-        return &queue;
-    }
-    auto begin (){
-        return nodes.begin();
-    }
-    auto end() {
-        return nodes.end();
-    }
-private:
-    std::unordered_map<std::string, Cell> nodes;
-    std::unordered_set<Cell*> startingNodes;
-    std::shared_mutex initialBuildingMutex;
-    bool isInitialBuilding;
-    CellQueue queue;
+struct CNode {
+    vector<CNode*> operands;
+    vector<CNode*> forwardRefs;
+    DataType arg = 0;
+    CellType type = VALUE;
+    size_t tmp_mark;
 };
 
-#endif //DAG_CALCULATION_CGRAPH_H
+
+void recursiveDFS(CNode *node, vector<CNode*> & order) {
+    if (node->tmp_mark == 1)
+        throw "Cycle detected";
+    else if (node->tmp_mark == 2)
+        return;
+
+    node->tmp_mark = 1;
+    for (auto & c : node->operands)
+        recursiveDFS(c, order);
+    node->tmp_mark = 2;
+    if (node->type == FORMULA)
+        order.emplace_back(node);
+}
+
+
+void addOperand (CNode * operand, CNode * forwardRef) {
+    forwardRef->operands.emplace_back(operand);
+    forwardRef->type = FORMULA;
+    operand->forwardRefs.emplace_back(forwardRef);
+}
+
+
+class CGraph {
+public:
+    void addNode (string & name, vector<string> & operands, DataType arg) {
+        CNode & cell = nodes_heap[name];
+        cell.arg = arg;
+        CNode * forwardRef = &cell;
+        preprocessingQueue.emplace_back(forwardRef);
+        for (auto &c : operands) {
+            CNode * operand = & nodes_heap[c];
+            addOperand(operand, forwardRef);
+            finishingNodes.erase(operand);
+        }
+    }
+    size_t size() {
+        return nodes_heap.size();
+    }
+
+    void preprocessOneThreaded () {
+        if (!preprocessingQueue.empty()) preprocessNodes();
+        buildTopologicalSort();
+    }
+
+    void calculateOneThreaded () {
+        for (auto & c: sortedNodes) {
+            auto data1 = 0;
+            for (auto & operand : c->operands) {
+                data1 += operand->arg;
+            }
+            c->arg = data1;
+        }
+    }
+
+    auto begin() {
+        return nodes_heap.begin();
+    }
+
+    auto end() {
+        return nodes_heap.end();
+    }
+
+private:
+    map<string, CNode> nodes_heap;
+    set<CNode *> startingNodes;
+    set<CNode *> finishingNodes;
+    vector<CNode *> preprocessingQueue;
+    vector<CNode *> sortedNodes;
+    void preprocessNodes () {
+        for (auto & c: preprocessingQueue) {
+            if (c->operands.empty()) startingNodes.insert(c);
+            else startingNodes.erase(c);
+            if (c->forwardRefs.empty()) finishingNodes.insert(c);
+            else finishingNodes.erase(c);
+        }
+    }
+    void buildTopologicalSort() {
+        sortedNodes.clear();
+        for (auto & c : nodes_heap) {
+            c.second.tmp_mark = 0;
+        }
+        for (auto & c : finishingNodes) {
+            recursiveDFS(c, sortedNodes);
+        }
+    }
+};
+
+
+
+#endif
