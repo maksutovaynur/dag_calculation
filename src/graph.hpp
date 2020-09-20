@@ -17,20 +17,20 @@ struct CNode {
     vector<CNode*> forwardRefs;
     DataType arg = 0;
     CellType type = VALUE;
-    size_t tmp_mark;
+    size_t searchtime_state;
 };
 
 
 void recursiveDFS(CNode *node, vector<CNode*> & order) {
-    if (node->tmp_mark == 1)
+    if (node->searchtime_state == 1)
         throw "Cycle detected";
-    else if (node->tmp_mark == 2)
+    else if (node->searchtime_state == 2)
         return;
 
-    node->tmp_mark = 1;
+    node->searchtime_state = 1;
     for (auto & c : node->operands)
         recursiveDFS(c, order);
-    node->tmp_mark = 2;
+    node->searchtime_state = 2;
     if (node->type == FORMULA)
         order.emplace_back(node);
 }
@@ -100,7 +100,7 @@ private:
     void buildTopologicalSort() {
         sortedNodes.clear();
         for (auto & c : nodes_heap) {
-            c.second.tmp_mark = 0;
+            c.second.searchtime_state = 0;
         }
         for (auto & c : finishingNodes) {
             recursiveDFS(c, sortedNodes);

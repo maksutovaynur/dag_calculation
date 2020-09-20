@@ -9,44 +9,51 @@
 using namespace std;
 
 
-void test1(string & inFileName, string & outFileName, int threadCount) {
+void test1(string &inFileName, string &outFileName, int threadCount) {
     string input;
     ifstream inFile(inFileName);
 
     CGraph graph;
 
     while (getline(inFile, input)) {
-        auto parsed = parse((char *)input.c_str());
+        auto parsed = parse((char *) input.c_str());
         graph.addNode(parsed.name, parsed.operands, parsed.arg);
     }
     cout << "Built graph, size = " << graph.size() << endl;
 
-    graph.preprocessOneThreaded();
+    if (threadCount == 0) {
+        graph.preprocessOneThreaded();
+    }
 
     cout << "Topological sort performed" << endl;
 
+
     ptime pstart = now();
 
-    graph.calculateOneThreaded();
-
+    if (threadCount == 0) {
+        graph.calculateOneThreaded();
+    }
+    
     ptime pend = now();
 
+
     cout
-        << "Calculation time using "
-        << threadCount
-        << " threads: "
-        << ((float)durationCast(pend - pstart))/1000000
-        << " s"
-        << endl;
+            << "Calculation time using "
+            << threadCount
+            << " threads: "
+            << ((float) durationCast(pend - pstart)) / 1000000
+            << " s"
+            << endl;
     ofstream outFile(outFileName);
 
-    for (auto & c : graph ) {
+    for (auto &c : graph) {
         outFile << c.first << " = " << c.second.arg << endl;
     }
+
 }
 
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     string inFileName, outFileName;
     int threadCount;
     if (argc <= 1) {
